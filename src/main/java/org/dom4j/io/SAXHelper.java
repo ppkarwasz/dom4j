@@ -20,6 +20,7 @@ import org.xml.sax.XMLReader;
  * </p>
  *
  * @author <a href="mailto:james.strachan@metastuff.com">James Strachan </a>
+ * @version $Revision: 1.18 $
  */
 class SAXHelper {
     protected SAXHelper() {
