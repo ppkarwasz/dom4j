@@ -14,6 +14,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.testng.Assert;
 import org.xml.sax.InputSource;
+import org.xml.sax.XMLReader;
 
 /**
  * Tests the {@link EntityResolutionStrategy} of {@link SAXReader} against a
@@ -22,8 +23,52 @@ import org.xml.sax.InputSource;
 public class EntityResolutionStrategyTest extends AbstractTestCase {
     private static final String XML_FILE = "/xml/entity/external.xml";
 
-    public void testIgnoreIsTheDefault() {
+    /** Document whose DTD, stored next to it, declares its element and entity. */
+    private static final String VALIDATED_XML_FILE = "/xml/entity/validated.xml";
+
+    public void testIgnoreIsTheDefaultWhenNotValidating() {
+        Assert.assertEquals(EntityResolutionStrategy.getDefault(false),
+                EntityResolutionStrategy.IGNORE);
         Assert.assertEquals(new SAXReader().getEntityResolutionStrategy(),
+                EntityResolutionStrategy.IGNORE);
+        Assert.assertEquals(new SAXReader(false).getEntityResolutionStrategy(),
+                EntityResolutionStrategy.IGNORE);
+    }
+
+    public void testDenyIsTheDefaultWhenValidating() {
+        Assert.assertEquals(EntityResolutionStrategy.getDefault(true),
+                EntityResolutionStrategy.DENY);
+        Assert.assertEquals(new SAXReader(true).getEntityResolutionStrategy(),
+                EntityResolutionStrategy.DENY);
+        Assert.assertEquals(
+                new SAXReader((XMLReader) null, true).getEntityResolutionStrategy(),
+                EntityResolutionStrategy.DENY);
+    }
+
+    public void testValidatingReaderDeniesByDefault() throws Exception {
+        try {
+            readGreeting(new SAXReader(true), VALIDATED_XML_FILE);
+            Assert.fail("a validating reader should deny the external DTD");
+        } catch (DocumentException e) {
+            Assert.assertTrue(e.getMessage().contains("greeting.dtd"),
+                    e.getMessage());
+            Assert.assertTrue(e.getMessage().contains("DENY"),
+                    e.getMessage());
+        }
+    }
+
+    public void testValidatingReaderWithAllow() throws Exception {
+        SAXReader reader = new SAXReader(true);
+        reader.setEntityResolutionStrategy(EntityResolutionStrategy.ALLOW);
+
+        Assert.assertEquals(readGreeting(reader, VALIDATED_XML_FILE),
+                "Hello, world!");
+    }
+
+    public void testExplicitStrategyOverridesTheValidatingDefault() {
+        SAXReader reader = new SAXReader(true);
+        reader.setEntityResolutionStrategy(EntityResolutionStrategy.IGNORE);
+        Assert.assertEquals(reader.getEntityResolutionStrategy(),
                 EntityResolutionStrategy.IGNORE);
     }
 
@@ -91,18 +136,24 @@ public class EntityResolutionStrategyTest extends AbstractTestCase {
 
         try {
             System.setProperty(property, "allow");
-            Assert.assertEquals(EntityResolutionStrategy.getDefault(),
+            Assert.assertEquals(EntityResolutionStrategy.getDefault(false),
+                    EntityResolutionStrategy.ALLOW);
+            Assert.assertEquals(EntityResolutionStrategy.getDefault(true),
                     EntityResolutionStrategy.ALLOW);
             Assert.assertEquals(new SAXReader().getEntityResolutionStrategy(),
                     EntityResolutionStrategy.ALLOW);
+            Assert.assertEquals(new SAXReader(true).getEntityResolutionStrategy(),
+                    EntityResolutionStrategy.ALLOW);
 
             System.setProperty(property, " Deny ");
-            Assert.assertEquals(EntityResolutionStrategy.getDefault(),
+            Assert.assertEquals(EntityResolutionStrategy.getDefault(false),
                     EntityResolutionStrategy.DENY);
 
             System.setProperty(property, "not a strategy");
-            Assert.assertEquals(EntityResolutionStrategy.getDefault(),
+            Assert.assertEquals(EntityResolutionStrategy.getDefault(false),
                     EntityResolutionStrategy.IGNORE);
+            Assert.assertEquals(EntityResolutionStrategy.getDefault(true),
+                    EntityResolutionStrategy.DENY);
         } finally {
             if (old == null) {
                 System.clearProperty(property);
@@ -113,7 +164,12 @@ public class EntityResolutionStrategyTest extends AbstractTestCase {
     }
 
     private String readGreeting(SAXReader reader) throws Exception {
-        Document document = getDocument(XML_FILE, reader);
+        return readGreeting(reader, XML_FILE);
+    }
+
+    private String readGreeting(SAXReader reader, String path)
+            throws Exception {
+        Document document = getDocument(path, reader);
 
         return document.getRootElement().getText();
     }

@@ -22,9 +22,9 @@ import java.util.Locale;
  * <p>
  * The three values are named after those of the JDK {@code jdk.xml.dtd.support} property:
  * <ul>
- * <li>{@link #IGNORE}: ignores all external resources, resolving them to empty content instead. This is the <strong>default behavior</strong> since version 2.3.0.</li>
+ * <li>{@link #IGNORE}: ignores all external resources, resolving them to empty content instead. This is the <strong>default</strong> of non-validating readers since version 2.3.0.</li>
  * <li>{@link #ALLOW}: fetches all external resources. This is the closest to the behavior of dom4j before versions 2.0.3 and 2.1.3.</li>
- * <li>{@link #DENY}: throws whenever an external resource (DTD subset, entity) is referenced.</li>
+ * <li>{@link #DENY}: throws whenever an external resource (DTD subset, entity) is referenced. This is the <strong>default</strong> of validating readers since version 2.3.0, since validation without the DTD is meaningless.</li>
  * </ul>
  *
  * <p>The default can be changed for all readers
@@ -45,7 +45,8 @@ public enum EntityResolutionStrategy {
      *
      * <p>The document is parsed as if the external DTD subset and every external entity were empty.</p>
      *
-     * <p>This is the <strong>default</strong> since 2.3.0.</p>
+     * <p>This is the <strong>default</strong> of non-validating readers since
+     * 2.3.0.</p>
      */
     IGNORE,
 
@@ -69,15 +70,17 @@ public enum EntityResolutionStrategy {
     public static final String SYSTEM_PROPERTY = "org.dom4j.io.entityResolutionStrategy";
 
     /**
-     * Returns the default strategy.
+     * Returns the default strategy of a reader.
      *
-     * <p>The value of the {@value #SYSTEM_PROPERTY}
-     * system property, or {@link #IGNORE} if the property is not set, is not
-     * a valid value, or cannot be read.</p>
+     * <p>The value of the {@value #SYSTEM_PROPERTY} system property, if it is
+     * set to a valid value and can be read. Otherwise {@link #DENY} for a
+     * validating reader and {@link #IGNORE} for a non-validating one.</p>
      *
+     * @param validating whether the reader validates documents against their
+     *                   DTD
      * @return the default strategy
      */
-    public static EntityResolutionStrategy getDefault() {
+    public static EntityResolutionStrategy getDefault(boolean validating) {
         try {
             String value = System.getProperty(SYSTEM_PROPERTY);
             if (value != null) {
@@ -86,7 +89,7 @@ public enum EntityResolutionStrategy {
         } catch (IllegalArgumentException | SecurityException e) {
             // fall through to the safe default
         }
-        return IGNORE;
+        return validating ? DENY : IGNORE;
     }
 }
 

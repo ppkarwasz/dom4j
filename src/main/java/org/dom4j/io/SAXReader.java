@@ -54,8 +54,9 @@ import org.xml.sax.helpers.XMLReaderFactory;
  * How references to external resources (the external DTD subset, external
  * general and parameter entities) are handled is controlled by the
  * {@link EntityResolutionStrategy} of the reader, see
- * {@link #setEntityResolutionStrategy(EntityResolutionStrategy)}. By default
- * they resolve to empty content. When an {@link EntityResolver} is set with
+ * {@link #setEntityResolutionStrategy(EntityResolutionStrategy)}. By default,
+ * a non-validating reader resolves them to empty content, while a validating
+ * reader fails with a parse error. When an {@link EntityResolver} is set with
  * {@link #setEntityResolver(EntityResolver)}, that resolver alone decides
  * which resources are loaded.
  *
@@ -103,10 +104,10 @@ public class SAXReader {
   private EntityResolver entityResolver;
 
   /**
-   * How external resources are resolved when no entity resolver is set
+   * How external resources are resolved when no entity resolver is set, or
+   * null for the default of this reader
    */
-  private EntityResolutionStrategy entityResolutionStrategy =
-          EntityResolutionStrategy.getDefault();
+  private EntityResolutionStrategy entityResolutionStrategy;
 
   /**
    * Should element & attribute names and namespace URIs be interned?
@@ -778,10 +779,15 @@ public class SAXReader {
    * Returns the strategy used to resolve external resources when no
    * {@link EntityResolver} has been set.
    *
-   * @return the strategy, never null
+   * @return the strategy set on this reader, or the default given by
+   *         {@link EntityResolutionStrategy#getDefault(boolean)}, never null
    * @since 2.3.0
    */
   public EntityResolutionStrategy getEntityResolutionStrategy() {
+    if (entityResolutionStrategy == null) {
+      return EntityResolutionStrategy.getDefault(validating);
+    }
+
     return entityResolutionStrategy;
   }
 
@@ -791,7 +797,7 @@ public class SAXReader {
    * The strategy applies to the external DTD subset and to external general
    * and parameter entities, as long as no {@link EntityResolver} has been set
    * with {@link #setEntityResolver(EntityResolver)}. The default is given by
-   * {@link EntityResolutionStrategy#getDefault()}.
+   * {@link EntityResolutionStrategy#getDefault(boolean)}.
    *
    * @param strategy the strategy, must not be null
    * @since 2.3.0
@@ -1050,7 +1056,7 @@ public class SAXReader {
    * @return the resolver, never null
    */
   protected EntityResolver createDefaultEntityResolver(String systemId) {
-    switch (entityResolutionStrategy) {
+    switch (getEntityResolutionStrategy()) {
       case ALLOW:
         String prefix = null;
 
