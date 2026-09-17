@@ -24,7 +24,7 @@ import java.util.Locale;
  * <ul>
  * <li>{@link #IGNORE}: ignores all external resources, resolving them to empty content instead. This is the <strong>default</strong> of non-validating readers since version 2.3.0.</li>
  * <li>{@link #ALLOW}: fetches all external resources. This is the closest to the behavior of dom4j before versions 2.0.3 and 2.1.3.</li>
- * <li>{@link #DENY}: throws whenever an external resource (DTD subset, entity) is referenced. This is the <strong>default</strong> of validating readers since version 2.3.0, since validation without the DTD is meaningless.</li>
+ * <li>{@link #DENY}: throws whenever an external resource (DTD subset, entity) is referenced. This is the <strong>default</strong> of validating readers since version 2.3.0.</li>
  * </ul>
  *
  * <p>The default can be changed for all readers
